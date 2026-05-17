@@ -68,37 +68,7 @@ WeChat_Crawler/
 你可以直接复制下面的内容，保存为 `README.md` 或 `使用说明书.md`。
 
 Markdown
-
 ```
-# 🕵️‍♂️ 全自动微信公众号采集流水线 (WeChat Article Crawler)
-
-> **项目代号**：Project Fayi  
-> **适用人群**：社会科学研究者、数据分析师  
-> **核心功能**：批量抓取微信公众号历史文章，包含正文、阅读量、点赞数，支持断点续传。
-
----
-
-## 📚 1. 项目架构 (Pipeline)
-
-我们的工作流像一条工厂流水线，分为三个明确的步骤：
-
-```mermaid
-graph TD
-    A[准备阶段] -->|手动获取| B(Cookie & Token)
-    B -->|填入配置| C{启动脚本}
-    C -->|步骤1: 获取链接| D[get_urls_api.py]
-    D -->|生成| E(url_batch_x.txt)
-    E -->|步骤2: 爬取内容| F[main.py]
-    F -->|成功| G[保存为 Markdown]
-    F -->|失败/报错| H(url_wrong.txt)
-    H -->|步骤3: 自动重试| F
-    
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style F fill:#bbf,stroke:#333,stroke-width:2px
-    style H fill:#f96,stroke:#333,stroke-width:2px
-```
-
-------
 
 ## 🛠️ 2. 环境安装 (第一次运行前做)
 
