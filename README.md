@@ -12,7 +12,7 @@
 
 我们的工作流像一条工厂流水线，分为三个明确的步骤：
 
-```mermaid
+---mermaid
 graph TD
     A[准备阶段] -->|手动获取| B(Cookie & Token)
     B -->|填入配置| C{启动脚本}
