@@ -12,7 +12,7 @@
 
 我们的工作流像一条工厂流水线，分为三个明确的步骤：
 
----mermaid
+```mermaid
 graph TD
     A[准备阶段] -->|手动获取| B(Cookie & Token)
     B -->|填入配置| C{启动脚本}
@@ -26,7 +26,9 @@ graph TD
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style F fill:#bbf,stroke:#333,stroke-width:2px
     style H fill:#f96,stroke:#333,stroke-width:2px
+```
 
+------
 ### ✨ 核心特性
 
 * **全自动采集**：只需配置一次 Token 和 Cookie，即可批量获取 URL。
