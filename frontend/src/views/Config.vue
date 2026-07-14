@@ -2,11 +2,18 @@
   <div>
     <h2 style="margin-bottom: 20px">⚙️ 配置管理</h2>
     <p style="color: #909399; margin-bottom: 20px">
-      在此配置微信公众号接口的认证信息。Token 和 Cookie 需通过浏览器 F12 抓包获取，详见项目 README。
+      在此配置微信公众号接口的认证信息。支持手动填写或扫码自动获取。
     </p>
 
     <el-card shadow="never" style="max-width: 720px">
-      <template #header><span>认证配置</span></template>
+      <template #header>
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <span>认证配置</span>
+          <el-button type="primary" @click="showQrcode = true">
+            <el-icon><Camera /></el-icon> 扫码登录
+          </el-button>
+        </div>
+      </template>
 
       <el-form :model="form" label-width="120px" v-loading="loading">
         <el-form-item label="公众号名称">
@@ -48,18 +55,23 @@
         style="margin-top: 16px"
       />
     </el-card>
+
+    <!-- 扫码登录弹窗 -->
+    <QrcodeLogin v-model="showQrcode" @logged-in="onLoggedIn" />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { getConfigs, updateConfig, testToken } from '../api/config'
+import QrcodeLogin from '../components/config/QrcodeLogin.vue'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(true)
 const saving = ref(false)
 const testing = ref(false)
 const testResult = ref(null)
+const showQrcode = ref(false)
 
 const form = reactive({
   token: '',
@@ -67,6 +79,17 @@ const form = reactive({
   appmsg_token: '',
   target_name: '',
 })
+
+async function onLoggedIn() {
+  showQrcode.value = false
+  try {
+    const configs = await getConfigs()
+    for (const c of configs) {
+      if (c.key in form) form[c.key] = c.value
+    }
+    ElMessage.success('配置已自动填入，请确认后保存')
+  } catch (_) {}
+}
 
 onMounted(async () => {
   try {

@@ -84,3 +84,43 @@ def test_token(db: Session = Depends(get_db)):
         )
     except Exception as e:
         return TestTokenResponse(success=False, message=f"连接失败: {str(e)}")
+
+
+@router.websocket("/ws/qrcode/{scan_id}")
+async def qrcode_websocket(websocket, scan_id: str):
+    """WebSocket: 扫码登录实时推送 QR 码截图"""
+    from fastapi import WebSocket
+    import uuid
+
+    await websocket.accept()
+
+    async def broadcast(data):
+        import json
+        try:
+            await websocket.send_text(json.dumps(data, ensure_ascii=False))
+        except Exception:
+            pass
+
+    from backend.services.auth_service import start_scan_login, cancel_scan
+
+    start_scan_login(scan_id, broadcast)
+
+    try:
+        while True:
+            msg = await websocket.receive_text()
+            if msg == "cancel":
+                cancel_scan(scan_id)
+                break
+    except Exception:
+        cancel_scan(scan_id)
+
+
+@router.get("/config/scan-status/{scan_id}")
+def get_scan_status(scan_id: str):
+    """查询扫码状态"""
+    from backend.services.auth_service import _active_scans
+    info = _active_scans.get(scan_id, {})
+    return {
+        "scan_id": scan_id,
+        "status": info.get("status", "not_found"),
+    }
