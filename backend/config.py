@@ -11,4 +11,6 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "police_country_articles")
 CORS_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://wechat-spider.vercel.app",
+    "https://wechat-spider-f0nnkf3dm-nianping-s-projects.vercel.app",
 ]
