@@ -67,9 +67,9 @@ function startScan() {
 
   if (ws) ws.close()
 
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
-  const wsUrl = apiBase.replace(/^http/, 'ws')
-  ws = new WebSocket(`${wsUrl}/ws/qrcode/${scanId}`)
+  const wsBase = (import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
+  const wsUrl = wsBase.replace(/^http/, 'ws')
+  ws = new WebSocket(`${wsUrl}/api/ws/qrcode/${scanId}`)
 
   ws.onmessage = (e) => {
     try {

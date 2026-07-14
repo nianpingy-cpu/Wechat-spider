@@ -1,6 +1,6 @@
 """配置管理 API"""
 import requests
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, WebSocket
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import Config
@@ -87,21 +87,26 @@ def test_token(db: Session = Depends(get_db)):
 
 
 @router.websocket("/ws/qrcode/{scan_id}")
-async def qrcode_websocket(websocket, scan_id: str):
+async def qrcode_websocket(websocket: WebSocket, scan_id: str):
     """WebSocket: 扫码登录实时推送 QR 码截图"""
-    from fastapi import WebSocket
-    import uuid
+    import json
 
     await websocket.accept()
 
     async def broadcast(data):
-        import json
         try:
             await websocket.send_text(json.dumps(data, ensure_ascii=False))
         except Exception:
             pass
 
-    from backend.services.auth_service import start_scan_login, cancel_scan
+    try:
+        from backend.services.auth_service import start_scan_login, cancel_scan
+    except ImportError as e:
+        await websocket.send_text(json.dumps({
+            "type": "login_error",
+            "message": f"Playwright 未安装，扫码登录不可用: {e}",
+        }, ensure_ascii=False))
+        return
 
     start_scan_login(scan_id, broadcast)
 
