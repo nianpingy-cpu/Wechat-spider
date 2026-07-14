@@ -3,29 +3,43 @@
     <el-form :model="form" label-width="100px">
       <el-form-item label="任务类型">
         <el-radio-group v-model="form.type">
-          <el-radio value="fetch_urls">抓取链接 (URL)</el-radio>
-          <el-radio value="crawl_articles">爬取文章内容</el-radio>
+          <el-radio value="fetch_urls">抓取链接</el-radio>
+          <el-radio value="crawl_content">爬取正文</el-radio>
+          <el-radio value="fetch_stats">抓取阅读量</el-radio>
+          <el-radio value="full_pipeline">🚀 全流程一键</el-radio>
         </el-radio-group>
       </el-form-item>
 
-      <template v-if="form.type === 'fetch_urls'">
+      <template v-if="form.type === 'fetch_urls' || form.type === 'full_pipeline'">
         <el-form-item label="起始页码">
           <el-input-number v-model="form.start_page" :min="0" :max="10000" />
         </el-form-item>
         <el-form-item label="结束页码">
           <el-input-number v-model="form.end_page" :min="1" :max="10000" />
         </el-form-item>
-        <el-form-item label="输出文件">
+        <el-form-item v-if="form.type === 'fetch_urls'" label="输出文件">
           <el-input v-model="form.input_file" placeholder="url_(1-50).txt" />
         </el-form-item>
       </template>
 
-      <template v-if="form.type === 'crawl_articles'">
+      <template v-if="form.type === 'crawl_content'">
         <el-form-item label="输入文件">
           <el-select v-model="form.input_file" filterable allow-create placeholder="选择 URL 文件">
             <el-option v-for="f in urlFiles" :key="f" :label="f" :value="f" />
           </el-select>
         </el-form-item>
+      </template>
+
+      <template v-if="form.type === 'fetch_stats'">
+        <el-alert type="info" :closable="false" show-icon style="margin-bottom: 12px">
+          将遍历数据库中所有已有文章，更新其阅读量、点赞数和在看数。
+        </el-alert>
+      </template>
+
+      <template v-if="form.type === 'full_pipeline'">
+        <el-alert type="success" :closable="false" show-icon style="margin-bottom: 12px">
+          自动串联 3 步：抓取链接 → 爬取正文 → 更新阅读量，全自动完成。
+        </el-alert>
       </template>
     </el-form>
 

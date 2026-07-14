@@ -26,10 +26,13 @@ class ConfigResponse(BaseModel):
 # ==================== Task ====================
 
 class TaskCreate(BaseModel):
-    type: str  # fetch_urls | crawl_articles
+    type: str  # fetch_urls | crawl_content | fetch_stats | full_pipeline
     input_file: str = ""
     start_page: int = 1
     end_page: int = 1
+    parent_task_id: Optional[int] = None
+    batch_id: str = ""
+    article_ids: Optional[list[int]] = None  # fetch_stats 指定文章 ID 列表
 
 class TaskResponse(BaseModel):
     id: int
@@ -41,6 +44,8 @@ class TaskResponse(BaseModel):
     total_count: int
     success_count: int
     fail_count: int
+    parent_task_id: Optional[int] = None
+    batch_id: str = ""
     created_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
 
@@ -53,6 +58,15 @@ class TaskListResponse(BaseModel):
     page: int
     page_size: int
 
+class BatchGroup(BaseModel):
+    """批次中所有任务按类型分组"""
+    batch_id: str
+    tasks: list[TaskResponse]
+
+class BatchListResponse(BaseModel):
+    groups: list[BatchGroup]
+    total: int
+
 
 # ==================== TaskLog ====================
 
@@ -61,6 +75,7 @@ class TaskLogResponse(BaseModel):
     task_id: int
     level: str
     message: str
+    phase: str = ""
     created_at: Optional[datetime] = None
 
     class Config:

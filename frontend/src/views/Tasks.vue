@@ -13,7 +13,7 @@
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
-            <el-tag size="small">{{ row.type === 'fetch_urls' ? '抓取链接' : '爬取文章' }}</el-tag>
+            <el-tag size="small" :type="taskTypeTag(row.type)">{{ taskTypeLabel(row.type) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="90">
@@ -134,6 +134,16 @@ function statusType(s) {
 function statusLabel(s) {
   const map = { pending: '等待中', running: '运行中', paused: '已暂停', completed: '已完成', failed: '失败' }
   return map[s] || s
+}
+
+function taskTypeLabel(t) {
+  const map = { fetch_urls: '抓取链接', crawl_articles: '爬取正文', crawl_content: '爬取正文', fetch_stats: '抓取阅读量', full_pipeline: '全流程' }
+  return map[t] || t
+}
+
+function taskTypeTag(t) {
+  const map = { fetch_urls: '', crawl_articles: 'success', crawl_content: 'success', fetch_stats: 'warning', full_pipeline: 'danger' }
+  return map[t] || ''
 }
 
 async function fetchTasks() {

@@ -83,13 +83,37 @@ def start_task(task_id: int, db: Session = Depends(get_db)):
             daemon=True,
         )
         thread.start()
-    elif task.type == "crawl_articles":
+    elif task.type in ("crawl_articles", "crawl_content"):
+        # 兼容旧的 crawl_articles 和新的 crawl_content
         if not cookie:
             return MessageResponse(success=False, message="请先在配置页填写 Cookie")
         from backend.services.crawler_service import crawl_articles
         thread = threading.Thread(
             target=crawl_articles,
             args=(task_id, cookie, appmsg_token, task.input_file),
+            daemon=True,
+        )
+        thread.start()
+    elif task.type == "fetch_stats":
+        if not cookie or not appmsg_token:
+            return MessageResponse(success=False, message="请先在配置页填写 Cookie 和 AppMsg Token")
+        from backend.services.stats_service import fetch_stats
+        article_ids = getattr(task, "article_ids", None)
+        thread = threading.Thread(
+            target=fetch_stats,
+            args=(task_id, cookie, appmsg_token),
+            kwargs={"article_ids": article_ids},
+            daemon=True,
+        )
+        thread.start()
+    elif task.type == "full_pipeline":
+        if not token or not cookie:
+            return MessageResponse(success=False, message="请先在配置页填写 Token 和 Cookie")
+        from backend.services.pipeline_service import run_full_pipeline
+        cfg = _get_config_dict(db)
+        thread = threading.Thread(
+            target=run_full_pipeline,
+            args=(task_id, cfg),
             daemon=True,
         )
         thread.start()
@@ -165,6 +189,25 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
     db.delete(task)
     db.commit()
     return MessageResponse(message="任务已删除")
+
+
+@router.get("/tasks/batches", response_model=list[TaskResponse])
+def list_batches(db: Session = Depends(get_db)):
+    """获取所有批次的父任务（batch_id 不为空且 parent_task_id 为空的顶层任务）"""
+    tasks = db.query(Task).filter(
+        Task.batch_id != "",
+        Task.parent_task_id.is_(None)
+    ).order_by(Task.created_at.desc()).all()
+    return tasks
+
+
+@router.get("/tasks/batch/{batch_id}", response_model=list[TaskResponse])
+def get_batch_tasks(batch_id: str, db: Session = Depends(get_db)):
+    """获取同一批次的所有子任务"""
+    tasks = db.query(Task).filter(
+        Task.batch_id == batch_id
+    ).order_by(Task.id.asc()).all()
+    return tasks
 
 
 # ==================== WebSocket ====================

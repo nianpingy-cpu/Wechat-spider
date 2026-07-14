@@ -13,25 +13,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 sys.path.insert(0, BASE_DIR)
 
 from backend.database import SessionLocal
-from backend.models import Task, TaskLog, Article
-from backend.ws_manager import manager
-
-
-def add_log(task_id: int, level: str, message: str):
-    db = SessionLocal()
-    try:
-        log = TaskLog(task_id=task_id, level=level, message=message)
-        db.add(log)
-        db.commit()
-    finally:
-        db.close()
-    manager.broadcast_sync(task_id, {
-        "type": "log",
-        "task_id": task_id,
-        "level": level,
-        "message": message,
-        "time": datetime.utcnow().strftime("%H:%M:%S")
-    })
+from backend.models import Task, Article
+from backend.services.log_service import add_log, update_task_progress
 
 
 def crawl_articles(task_id: int, cookie: str, appmsg_token: str,
@@ -48,7 +31,7 @@ def crawl_articles(task_id: int, cookie: str, appmsg_token: str,
         # 读取 URL 列表
         filepath = os.path.join(BASE_DIR, input_file)
         if not os.path.exists(filepath):
-            add_log(task_id, "error", f"❌ 文件不存在: {input_file}")
+            add_log(task_id, "error", f"❌ 文件不存在: {input_file}", "crawling")
             task.status = "failed"
             db.commit()
             return
@@ -58,7 +41,7 @@ def crawl_articles(task_id: int, cookie: str, appmsg_token: str,
 
         task.total_count = len(urls)
         db.commit()
-        add_log(task_id, "info", f"🎯 读取到 {len(urls)} 个任务，开始执行...")
+        add_log(task_id, "info", f"🎯 读取到 {len(urls)} 个任务，开始执行...", "crawling")
 
         # 初始化 html2text
         h = html2text.HTML2Text()
@@ -81,18 +64,18 @@ def crawl_articles(task_id: int, cookie: str, appmsg_token: str,
         for idx, url in enumerate(urls):
             db.refresh(task)
             if task.status == "paused":
-                add_log(task_id, "warning", "⏸️ 任务已暂停")
+                add_log(task_id, "warning", "⏸️ 任务已暂停", "crawling")
                 # 保存剩余 URL 供断点续传
                 remaining_file = os.path.join(BASE_DIR, "remaining_urls.txt")
                 with open(remaining_file, "w", encoding="utf-8") as rf:
                     for u in urls[idx:]:
                         rf.write(u + "\n")
-                add_log(task_id, "info", f"💾 剩余 {len(urls) - idx} 个 URL 已保存至 remaining_urls.txt")
+                add_log(task_id, "info", f"💾 剩余 {len(urls) - idx} 个 URL 已保存至 remaining_urls.txt", "crawling")
                 db.close()
                 return
 
             try:
-                add_log(task_id, "info", f"🚀 [{idx+1}/{len(urls)}] 开始处理: {url[:80]}...")
+                add_log(task_id, "info", f"🚀 [{idx+1}/{len(urls)}] 开始处理: {url[:80]}...", "crawling")
 
                 # 获取正文
                 response = requests.get(url, headers=headers, timeout=15)
@@ -162,14 +145,14 @@ def crawl_articles(task_id: int, cookie: str, appmsg_token: str,
 
                 if stats:
                     stats_text = f"阅读量: {read_num}  点赞数: {like_num}  在看数: {old_like}\n\n"
-                    add_log(task_id, "success", f"📊 阅读: {read_num} | 点赞: {like_num}")
+                    add_log(task_id, "success", f"📊 阅读: {read_num} | 点赞: {like_num}", "crawling")
 
                 # 正文处理
                 content_div = soup.find("div", {"id": "js_content"})
                 if not content_div:
                     if "验证" in soup.get_text():
                         raise Exception("触发验证码/风控")
-                    add_log(task_id, "warning", f"❌ 未找到文章内容: {title}")
+                    add_log(task_id, "warning", f"❌ 未找到文章内容: {title}", "crawling")
                     fail += 1
                     wrong_urls.append(url)
                     continue
@@ -218,10 +201,10 @@ def crawl_articles(task_id: int, cookie: str, appmsg_token: str,
                 task.fail_count = fail
                 db.commit()
 
-                add_log(task_id, "success", f"✅ [{idx+1}/{len(urls)}] 保存成功: {title}")
+                add_log(task_id, "success", f"✅ [{idx+1}/{len(urls)}] 保存成功: {title}", "crawling")
 
             except Exception as e:
-                add_log(task_id, "error", f"❌ [{idx+1}/{len(urls)}] 处理出错: {e}")
+                add_log(task_id, "error", f"❌ [{idx+1}/{len(urls)}] 处理出错: {e}", "crawling")
                 fail += 1
                 wrong_urls.append(url)
                 task.fail_count = fail
@@ -239,10 +222,10 @@ def crawl_articles(task_id: int, cookie: str, appmsg_token: str,
         task.finished_at = datetime.utcnow()
         db.commit()
         add_log(task_id, "success",
-                f"🏁 全部完成！成功: {success}, 失败: {fail}, 失败链接已保存至 url_wrong.txt")
+                f"🏁 全部完成！成功: {success}, 失败: {fail}, 失败链接已保存至 url_wrong.txt", "crawling")
 
     except Exception as e:
-        add_log(task_id, "error", f"💥 严重错误: {e}")
+        add_log(task_id, "error", f"💥 严重错误: {e}", "crawling")
         task = db.query(Task).filter(Task.id == task_id).first()
         if task:
             task.status = "failed"

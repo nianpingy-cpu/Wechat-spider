@@ -26,6 +26,8 @@ class Task(Base):
     total_count = Column(Integer, default=0)
     success_count = Column(Integer, default=0)
     fail_count = Column(Integer, default=0)
+    parent_task_id = Column(Integer, ForeignKey("task.id"), nullable=True, comment="父任务 ID（用于子任务串联）")
+    batch_id = Column(String(64), default="", index=True, comment="批次 ID（同一批次任务共享）")
     created_at = Column(DateTime, default=datetime.utcnow)
     finished_at = Column(DateTime, nullable=True)
 
@@ -37,6 +39,7 @@ class TaskLog(Base):
     task_id = Column(Integer, ForeignKey("task.id", ondelete="CASCADE"), nullable=False, index=True)
     level = Column(String(16), default="info", comment="info | success | warning | error")
     message = Column(Text, default="")
+    phase = Column(String(32), default="", comment="searching | fetching | crawling | stats | retry | pipeline")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
