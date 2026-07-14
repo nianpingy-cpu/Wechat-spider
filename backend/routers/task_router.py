@@ -75,7 +75,7 @@ def start_task(task_id: int, db: Session = Depends(get_db)):
     if task.type == "fetch_urls":
         if not token or not cookie:
             return MessageResponse(success=False, message="请先在配置页填写 Token 和 Cookie")
-        from services.url_fetcher_service import fetch_urls
+        from backend.services.url_fetcher_service import fetch_urls
         thread = threading.Thread(
             target=fetch_urls,
             args=(task_id, token, cookie, target_name,
@@ -86,7 +86,7 @@ def start_task(task_id: int, db: Session = Depends(get_db)):
     elif task.type == "crawl_articles":
         if not cookie:
             return MessageResponse(success=False, message="请先在配置页填写 Cookie")
-        from services.crawler_service import crawl_articles
+        from backend.services.crawler_service import crawl_articles
         thread = threading.Thread(
             target=crawl_articles,
             args=(task_id, cookie, appmsg_token, task.input_file),
@@ -132,7 +132,7 @@ def retry_failed(task_id: int, db: Session = Depends(get_db)):
     cookie = cfg.get("cookie", "")
     appmsg_token = cfg.get("appmsg_token", "")
 
-    from services.crawler_service import crawl_articles
+    from backend.services.crawler_service import crawl_articles
     thread = threading.Thread(
         target=crawl_articles,
         args=(task.id, cookie, appmsg_token, "url_wrong.txt"),

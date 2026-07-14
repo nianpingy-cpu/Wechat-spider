@@ -1,0 +1,6 @@
+name = "wechat-spider-api"
+main = "src/index.js"
+compatibility_date = "2025-07-14"
+
+[vars]
+BACKEND_URL = "https://wechat-spider.onrender.com"
